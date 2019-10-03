@@ -92,7 +92,7 @@ static int count_significant_digits(uint64_t value)
     uint64_t digits[] =
     {
         0, 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000,
-        1000000000, 100000000000LL, 1000000000000LL, 10000000000000LL,
+        1000000000LL, 10000000000LL, 100000000000LL, 1000000000000LL, 10000000000000LL,
         100000000000000LL, 1000000000000000LL, 10000000000000000LL
     };
 
@@ -147,6 +147,7 @@ static inline int encode_zero(unsigned sign, uint8_t* dst, int dst_length)
 
 static int encode_number(unsigned significand_sign, uint64_t significand, uint64_t exponent_sign, uint64_t exponent, uint8_t* dst, int dst_length)
 {
+    KSLOG_DEBUG("@ encode_number(%d, %u, %u, %u, (dst), %d)", significand_sign, significand, exponent_sign, exponent, dst_length);
     uint64_t exponent_field = significand_sign | (exponent_sign << 1) | (exponent << 2);
     KSLOG_TRACE("Exponent field = sig sign %d | exp sign %d << 1 | exp %d << 2 = 0x%x", significand_sign, exponent_sign, exponent, exponent_field);
 
@@ -173,6 +174,7 @@ static int encode_number(unsigned significand_sign, uint64_t significand, uint64
 
 static void extract_float(uint64_t uvalue, int significant_digits, int* restrict exponent_ptr, uint64_t* restrict significand_ptr)
 {
+    KSLOG_DEBUG("@ extract_float(%x, %d, (exp), (sig))", uvalue, significant_digits);
     uint64_t significand = 0;
     int exponent = 0;
     if((uvalue & MASK_EXTENDED) == VALUE_EXTENDED)
@@ -201,8 +203,9 @@ static void extract_float(uint64_t uvalue, int significant_digits, int* restrict
     if(significant_digits > 0 && significant_digits < MAX_DIGITS_64_BIT)
     {
         int current_digits = count_significant_digits(significand);
-        KSLOG_TRACE("Current digits %d", current_digits);
-        while(current_digits > significant_digits)
+        int drop_digits = current_digits - significant_digits;
+        KSLOG_TRACE("Current digits %d. dropping %d digits", current_digits, drop_digits);
+        for(int i = 0; i < drop_digits; i++)
         {
             unsigned remainder = significand % 10;
             significand /= 10;
@@ -217,7 +220,6 @@ static void extract_float(uint64_t uvalue, int significant_digits, int* restrict
                     significand++;
                 }
             }
-            current_digits--;
             exponent++;
         }
         KSLOG_TRACE("Reduced to %d sig digits: %ld", significant_digits, significand);
@@ -239,6 +241,7 @@ const char* cfloat_version()
 
 ANSI_EXTENSION int cfloat_encoded_size(_Decimal64 value, int significant_digits)
 {
+    KSLOG_DEBUG("@ cfloat_encoded_size(%.16g, %d)", (double)value, significant_digits);
     if(value == 0)
     {
         return 1;
@@ -267,7 +270,7 @@ ANSI_EXTENSION int cfloat_encoded_size(_Decimal64 value, int significant_digits)
 
 ANSI_EXTENSION int cfloat_encode(_Decimal64 dvalue, int significant_digits, uint8_t* dst, int dst_length)
 {
-    KSLOG_DEBUG("Encoding %f", (double)dvalue);
+    KSLOG_DEBUG("@ cfloat_encode(%.16g, %d, (ptr), %d)", (double)dvalue, significant_digits, dst_length);
 
     uint64_t uvalue = 0;
     memcpy(&uvalue, &dvalue, sizeof(uvalue));
@@ -299,6 +302,7 @@ ANSI_EXTENSION int cfloat_encode(_Decimal64 dvalue, int significant_digits, uint
 
 ANSI_EXTENSION int cfloat_decode(const uint8_t* src, int src_length, _Decimal64* value)
 {
+    KSLOG_DATA_DEBUG(src, src_length, "@ cfloat_decode((src), %d, (value))", src_length);
     if(src_length < 1)
     {
         KSLOG_DEBUG("src_length %d is less than 1", src_length);
@@ -414,6 +418,6 @@ ANSI_EXTENSION int cfloat_decode(const uint8_t* src, int src_length, _Decimal64*
 
     KSLOG_TRACE("Raw value: %016lx", uvalue);
     memcpy(value, &uvalue, sizeof(*value));
-    KSLOG_TRACE("Decoded %d bytes", offset);
+    KSLOG_TRACE("Decoded %.16g in %d bytes", (double)*value, offset);
     return offset;
 }

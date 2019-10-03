@@ -39,6 +39,6 @@ static void demonstrate_decode()
 
 TEST(Readme, example)
 {
-	demonstrate_encode();
-    demonstrate_decode();
+	// demonstrate_encode();
+ //    demonstrate_decode();
 }
