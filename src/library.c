@@ -169,6 +169,8 @@ static int encode_number(unsigned significand_sign, uint64_t significand, uint64
     return offset;
 }
 
+// TODO: Make a version of extract_float for DPD encoding that can be switched with a #define
+
 static void extract_float(uint64_t uvalue, int significant_digits, int* restrict exponent_ptr, uint64_t* restrict significand_ptr)
 {
     uint64_t significand = 0;

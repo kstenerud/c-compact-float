@@ -5,6 +5,13 @@ A C implementation of [compact float](https://github.com/kstenerud/compact-float
 
 
 
+Assumptions
+-----------
+
+ * Internal rounding and conversions use decimal floats (`_DecimalXYZ` in C, `std::decimal::decimalXYZ` in C++) under the assumption that host encoding is binary integer decimal (BID). This is the default for most compilers using `decNumber` (I think IBM is the only exception?). If host encoding is densely packed decimal (DPD), results will be incorrect. BTW, I'd appreciate a PR with a DPD version of `extract_float()` ;-)
+
+
+
 Usage
 -----
 
