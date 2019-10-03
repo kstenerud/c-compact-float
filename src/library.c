@@ -86,6 +86,27 @@ static inline uint64_t absolute_value(int64_t value)
     return (value + mask) ^ mask;
 }
 
+static int count_significant_digits(uint64_t value)
+{
+    // Count up to 16 because that's the limit for ieee754 floats
+    uint64_t digits[] =
+    {
+        0, 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000,
+        1000000000, 100000000000LL, 1000000000000LL, 10000000000000LL,
+        100000000000000LL, 1000000000000000LL, 10000000000000000LL
+    };
+
+    for(int i = 15; i > 0; i--)
+    {
+        if(value >= digits[i])
+        {
+            return i;
+        }
+    }
+
+    return 0;
+}
+
 static inline int encode_nan(bool is_signaling, uint8_t* dst, int dst_length)
 {
     const int encoded_length = 2;
@@ -174,14 +195,10 @@ static void extract_float(uint64_t uvalue, int significant_digits, int* restrict
     }
     KSLOG_TRACE("Reduced exp %d (%x), sig %ld (%lx)", exponent, exponent, significand, significand);
 
+
     if(significant_digits > 0 && significant_digits < MAX_DIGITS_64_BIT)
     {
-        int current_digits = 1;
-        for(uint64_t sig_temp = significand / 10; sig_temp > 0; sig_temp /= 10)
-        {
-            current_digits++;
-        }
-
+        int current_digits = count_significant_digits(significand);
         KSLOG_TRACE("Current digits %d", current_digits);
         while(current_digits > significant_digits)
         {
